@@ -1,70 +1,26 @@
-import win32api
-import win32con
-import time
-import threading
-from pynput.mouse import Button, Controller
-from pynput.keyboard import Listener, KeyCode
-import logging
+from fishing import Fishing, FishingController, logger, start_stop_key, exit_key
+from datetime import timedelta
+from pynput.keyboard import Listener
 
-logger = print
-delay = 5
-button = Button.left
-start_stop_key = KeyCode(char=']')
-exit_key = KeyCode(char='[')
+fishing_thread = Fishing(delay=4, interval=0.2)
+fishing_controller = FishingController(
+    fishing_thread,
+    delay=int(timedelta(minutes=5).total_seconds())
+)
 
-
-def click():
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0)
-    time.sleep(0.5)
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0)
-
-
-
-class ClickMouse(threading.Thread):
-    def __init__(self, delay, interval=1):
-        super().__init__()
-        self.delay = delay
-        self.interval = interval
-        self.running = False
-        self.program_running = True
-
-    def start_clicking(self):
-        logger('start fishing')
-        self.running = True
-
-    def stop_clicking(self):
-        logger('stop fishing')
-        self.running = False
-
-    def exit(self):
-        self.stop_clicking()
-        self.program_running = False
-
-    def run(self):
-        while self.program_running:
-            while self.running:
-                logger('throw rod')
-                click()
-                time.sleep(self.delay)
-                logger('catch')
-                click()
-                time.sleep(self.interval)
-
-
-
-click_thread = ClickMouse(delay=4, interval=0.5)
-click_thread.start()
+fishing_thread.start()
+fishing_controller.start()
 
 
 def on_press(key):
     logger(key)
     if key == start_stop_key:
-        if click_thread.running:
-            click_thread.stop_clicking()
+        if fishing_controller.running:
+            fishing_controller.stop_fishing()
         else:
-            click_thread.start_clicking()
+            fishing_controller.start_fishing()
     elif key == exit_key:
-        click_thread.exit()
+        fishing_controller.exit()
         listener.stop()
 
 
